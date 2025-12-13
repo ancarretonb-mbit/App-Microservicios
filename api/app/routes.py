@@ -104,6 +104,9 @@ def upload_image():
 
     local_path = os.path.join(upload_dir, f"{img_id}.jpg")
 
+    print("UPLOAD_FOLDER:", current_app.config["UPLOAD_FOLDER"])
+    print("CWD:", os.getcwd())
+
     with open(local_path, "wb") as f:
         f.write(img_bytes)
 

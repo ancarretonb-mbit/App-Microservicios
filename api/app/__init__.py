@@ -12,6 +12,7 @@ SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 def create_app():
     app = Flask(__name__)
     app.config['MYSQL_DB'] = Config.MYSQL_DB
+    app.config['UPLOAD_FOLDER'] = Config.UPLOAD_FOLDER  # <-- AÑADIR ESTA LÍNEA
     app.session = SessionLocal
 
     from .routes import routes_bp
