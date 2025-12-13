@@ -1,0 +1,46 @@
+=============================
+MINI-GUÍA: USAR PYTHON 3.11-SLIM SIN INTERNET EN DOCKER
+=============================
+
+1️⃣ En otra máquina con Internet:
+
+# (Opcional) Login en Docker Hub
+docker login
+
+# Descargar la imagen Python 3.11 slim
+docker pull python:3.11-slim
+
+# Guardar la imagen en un archivo tar
+docker save python:3.11-slim -o python_slim.tar
+
+# Copiar python_slim.tar a un USB o servicio seguro
+
+--------------------------------------------------
+2️⃣ En tu máquina sin Internet:
+
+# Copiar python_slim.tar a una carpeta local
+# Cargar la imagen en Docker
+docker load -i python_slim.tar
+
+# Verificar que la imagen está disponible
+docker images
+
+--------------------------------------------------
+3️⃣ Construir tu API Flask:
+
+# Dockerfile (ejemplo mínimo)
+FROM python:3.11-slim
+WORKDIR /app
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+COPY . .
+EXPOSE 80
+CMD ["python", "run.py"]
+
+# Construir la imagen
+docker build -t flask-api .
+
+# Ejecutar el contenedor
+docker run -d --name flask-api -p 80:80 flask-api
+
+# Acceder a la API en: http://localhost
