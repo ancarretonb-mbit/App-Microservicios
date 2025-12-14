@@ -1,5 +1,6 @@
 __pycache__/ 
 venv/ 
+venv_jupyter/ 
 .env 
 api/app/credentials.json
 .txt

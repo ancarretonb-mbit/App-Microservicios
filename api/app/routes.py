@@ -9,6 +9,8 @@ from .models import Picture, Tag
 from imagekitio import ImageKit
 import json
 from .credentials import load_credentials
+from sqlalchemy import func
+
 
 # Leer credentials.json montado en /app
 
@@ -67,7 +69,7 @@ def upload_image():
 
     upload_info = imagekit.upload(
         file=img_b64,
-        file_name="temp_upload.jpg"
+        file_name=f"temp_{uuid.uuid4()}.jpg"
     )
 
     public_url = upload_info.url
@@ -103,9 +105,6 @@ def upload_image():
     os.makedirs(upload_dir, exist_ok=True)
 
     local_path = os.path.join(upload_dir, f"{img_id}.jpg")
-
-    print("UPLOAD_FOLDER:", current_app.config["UPLOAD_FOLDER"])
-    print("CWD:", os.getcwd())
 
     with open(local_path, "wb") as f:
         f.write(img_bytes)
@@ -149,7 +148,7 @@ def upload_image():
     }), 201
 
 # -----------------------------
-# GET /image
+# GET /image{id}
 # -----------------------------
 
 @routes_bp.route("/image/<string:image_id>", methods=["GET"])
@@ -183,7 +182,10 @@ def get_image(image_id):
 
     finally:
         session.close()
-from sqlalchemy import func
+
+# -----------------------------
+# GET /images
+# -----------------------------
 
 @routes_bp.route("/images", methods=["GET"])
 def list_images():
@@ -217,8 +219,11 @@ def list_images():
 
         result = []
         for pic in pictures:
-            size_kb = round(os.path.getsize(pic.path) / 1024, 2)
+            if not os.path.exists(pic.path):
+                continue  # saltamos imágenes sin fichero
 
+            size_kb = round(os.path.getsize(pic.path) / 1024, 2)
+            
             result.append({
                 "id": pic.id,
                 "size": size_kb,
@@ -233,3 +238,51 @@ def list_images():
 
     finally:
         session.close()
+
+# -----------------------------
+# GET /tags
+# -----------------------------
+
+@routes_bp.route("/tags", methods=["GET"])
+def list_tags():
+
+    min_date = request.args.get("min_date")
+    max_date = request.args.get("max_date")
+
+    session = SessionLocal()
+
+    try:
+        query = (
+            session.query(
+                Tag.tag.label("tag"),
+                func.count(func.distinct(Tag.picture_id)).label("n_images"),
+                func.min(Tag.confidence).label("min_confidence"),
+                func.max(Tag.confidence).label("max_confidence"),
+                func.avg(Tag.confidence).label("mean_confidence"),
+            )
+            .join(Picture, Picture.id == Tag.picture_id)
+        )
+
+        if min_date:
+            query = query.filter(Picture.date >= min_date)
+        if max_date:
+            query = query.filter(Picture.date <= max_date)
+
+        query = query.group_by(Tag.tag)
+
+        rows = query.all()
+
+        return jsonify([
+            {
+                "tag": r.tag,
+                "n_images": r.n_images,
+                "min_confidence": round(r.min_confidence, 2),
+                "max_confidence": round(r.max_confidence, 2),
+                "mean_confidence": round(float(r.mean_confidence), 2),
+            }
+            for r in rows
+        ])
+
+    finally:
+        session.close()
+
