@@ -3,3 +3,5 @@ venv/
 .env 
 api/app/credentials.json
 .txt
+app/uploads/
+

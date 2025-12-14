@@ -38,9 +38,12 @@ services:
 
     ports:
       - "8000:8000"
+    
+    volumes:
+      - uploads_data:/app/uploads
  
 volumes:
-
   db_data:
+  uploads_data:
 
  
